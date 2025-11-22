@@ -73,6 +73,7 @@ public class RedisConfig {
         cacheConfigs.put("calendarCache", defaultConfig.entryTtl(Duration.ofHours(24)));
         cacheConfigs.put("todayCache", defaultConfig.entryTtl(Duration.ofHours(24)));
         cacheConfigs.put("popularCache", defaultConfig.entryTtl(Duration.ofDays(31)));
+        cacheConfigs.put("libraryCache", defaultConfig.entryTtl(Duration.ofDays(10)));
 
         // ======================== 创建 CacheManager ========================
         return RedisCacheManager.builder(redisConnectionFactory)

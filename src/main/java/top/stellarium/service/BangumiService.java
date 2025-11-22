@@ -7,6 +7,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import top.stellarium.pojo.dto.LibraryDTO;
 
 @Service
 public class BangumiService {
@@ -76,6 +77,33 @@ public class BangumiService {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/v0/subjects/{id}")
                         .build(id))
+                .retrieve()
+                .bodyToMono(String.class);
+    }
+
+    /**
+     * 获取排行榜
+     * @param
+     * @return Mono<String> 原始JSON
+     */
+    public Mono<String> getLibrary(LibraryDTO libraryDTO) {
+
+        return webClient.get()
+                .uri(uriBuilder -> {
+                    // 先添加必传参数
+                    uriBuilder.path("/v0/subjects")
+                            .queryParam("type", 2)
+                            .queryParam("limit", libraryDTO.getLimit())
+                            .queryParam("page", libraryDTO.getPage());
+                    // 非 null 参数才添加为 query 参数
+                    if (libraryDTO.getSort() != null) {
+                        uriBuilder.queryParam("sort", libraryDTO.getSort());
+                    }
+                    if (libraryDTO.getYear() != null) {
+                        uriBuilder.queryParam("year", Integer.parseInt(libraryDTO.getYear()));
+                    }
+                    return uriBuilder.build();
+                })
                 .retrieve()
                 .bodyToMono(String.class);
     }

@@ -60,7 +60,7 @@ public class IndexServiceImpl implements IndexService {
                 // 3. 获取当天
                 if (rootNode.isArray()) {
                     DayOfWeek dayOfWeek = LocalDateTime.now().getDayOfWeek();
-                    JsonNode dayNode = rootNode.get(dayOfWeek.getValue());
+                    JsonNode dayNode = rootNode.get(dayOfWeek.getValue()-1);
 
                     // 获取当天的 items 数组
                     JsonNode itemsNode = dayNode.get("items");
