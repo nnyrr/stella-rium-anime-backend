@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: stella-rium-anime
+
+  stella-rium:
+    bangumi:
+      url: ${stella-rium.bangumi.url}
+      user-agent: ${stella-rium.bangumi.user-agent}
+  data:
+    redis:
+      host: ${stella-rium.redis.host}
+      port: ${stella-rium.redis.port}
+      password: ${stella-rium.redis.password}
+      database: ${stella-rium.redis.database}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: top.stellarium.controller
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
