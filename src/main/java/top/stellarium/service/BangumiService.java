@@ -94,7 +94,7 @@ public class BangumiService {
                     uriBuilder.path("/v0/subjects")
                             .queryParam("type", 2)
                             .queryParam("limit", libraryDTO.getLimit())
-                            .queryParam("page", libraryDTO.getPage());
+                            .queryParam("offset", (libraryDTO.getPage()-1)*libraryDTO.getLimit());
                     // 非 null 参数才添加为 query 参数
                     if (libraryDTO.getSort() != null) {
                         uriBuilder.queryParam("sort", libraryDTO.getSort());
