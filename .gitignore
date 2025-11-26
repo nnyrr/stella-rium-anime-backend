@@ -3,8 +3,8 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-!**/src/main/**/resouces/application-dev.yml
-
+# 忽略指定路径的 application-dev.yml（绝对路径匹配，精准生效）
+src/main/resources/application-dev.yml
 ### STS ###
 .apt_generated
 .classpath
