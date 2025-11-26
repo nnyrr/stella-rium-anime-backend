@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import top.stellarium.common.exception.BusinessException;
 import top.stellarium.pojo.dto.LibraryDTO;
 import top.stellarium.pojo.vo.LibraryAnimeVO;
 import top.stellarium.pojo.vo.ListVO;
@@ -145,7 +146,7 @@ public class LibraryServiceImpl implements LibraryService {
         } catch (JsonProcessingException e) {
             // 建议使用 log 打印堆栈，而不是直接抛出 RuntimeException，根据你的业务需求调整
             e.printStackTrace();
-            throw new RuntimeException("JSON解析失败", e);
+            throw new BusinessException("json解析错误");
         }
 
         result.setList(animeList);

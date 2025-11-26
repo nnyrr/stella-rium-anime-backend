@@ -18,6 +18,7 @@ import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactor
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.*;
 import tools.jackson.databind.json.JsonMapper;
+import top.stellarium.common.constant.RedisConstant;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -70,10 +71,10 @@ public class RedisConfig {
 
         // ======================== 特定缓存配置（按需添加）=======================
         Map<String, RedisCacheConfiguration> cacheConfigs = new HashMap<>();
-        cacheConfigs.put("calendarCache", defaultConfig.entryTtl(Duration.ofHours(24)));
-        cacheConfigs.put("todayCache", defaultConfig.entryTtl(Duration.ofHours(24)));
-        cacheConfigs.put("popularCache", defaultConfig.entryTtl(Duration.ofDays(31)));
-        cacheConfigs.put("libraryCache", defaultConfig.entryTtl(Duration.ofDays(10)));
+        cacheConfigs.put(RedisConstant.CALENDAR, defaultConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigs.put(RedisConstant.TODAY, defaultConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigs.put(RedisConstant.POPULAR, defaultConfig.entryTtl(Duration.ofDays(31)));
+        cacheConfigs.put(RedisConstant.LIBRARY, defaultConfig.entryTtl(Duration.ofDays(10)));
 
         // ======================== 创建 CacheManager ========================
         return RedisCacheManager.builder(redisConnectionFactory)

@@ -7,10 +7,29 @@ spring:
   application:
     name: stella-rium-anime
 
+  datasource:
+    driver-class-name: ${stella-rium.datasource.driver-class-name}
+    url: jdbc:mysql://${stella-rium.datasource.host}:${stella-rium.datasource.port}/${stella-rium.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${stella-rium.datasource.username}
+    password: ${stella-rium.datasource.password}
+
   stella-rium:
+    turnstile: ${stella-rium.turnstile}
+    jwt:
+      security-key: ${stella-rium.jwt.security-key}
+      ttl: ${stella-rium.jwt.ttl}
+      token-name: ${stella-rium.jwt.token-name}
     bangumi:
       url: ${stella-rium.bangumi.url}
       user-agent: ${stella-rium.bangumi.user-agent}
+    minio:
+      url: http://${stella-rium.minio.ip}:${stella-rium.minio.port}
+        # 访问密钥（对应你配置的MINIO_ROOT_USER）
+      access-key: ${stella-rium.minio.access-key}
+        # 密钥（对应MINIO_ROOT_PASSWORD）
+      secret-key: ${stella-rium.minio.secret-key}
+        # 存储桶名称（提前在MinIO控制台创建，如：springboot-files）
+      bucket-name: ${stella-rium.minio.bucket-name}
   data:
     redis:
       host: ${stella-rium.redis.host}

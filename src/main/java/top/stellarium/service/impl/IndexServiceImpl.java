@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import top.stellarium.common.constant.RedisConstant;
+import top.stellarium.common.exception.BusinessException;
 import top.stellarium.pojo.vo.IndexAnimeVO;
 import top.stellarium.pojo.vo.ListVO;
 import top.stellarium.pojo.vo.TodaysPickVO;
@@ -45,9 +47,9 @@ public class IndexServiceImpl implements IndexService {
      *
      * @return
      */
-    @Cacheable(value = "calendarCache", key = todayString)
+    @Cacheable(value = RedisConstant.CALENDAR, key = todayString)
     public ListVO<IndexAnimeVO> getCalendar() {
-        log.info("今日缓存不存在");
+        log.info("每日缓存不存在");
         // 1. 调用 WebClient 获取 JSON 字符串
         Mono<String> mono = bangumiService.getCalendar();
         // 注意：因为方法返回值不是 Mono，这里必须阻塞(block)以获取结果
@@ -61,7 +63,6 @@ public class IndexServiceImpl implements IndexService {
                 if (rootNode.isArray()) {
                     DayOfWeek dayOfWeek = LocalDateTime.now().getDayOfWeek();
                     JsonNode dayNode = rootNode.get(dayOfWeek.getValue()-1);
-
                     // 获取当天的 items 数组
                     JsonNode itemsNode = dayNode.get("items");
                     if (itemsNode != null && itemsNode.isArray()) {
@@ -83,12 +84,10 @@ public class IndexServiceImpl implements IndexService {
                             resultList.add(vo);
                         }
                     }
-
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            // 这里可以抛出自定义异常或返回空列表
+            throw new BusinessException("获取今日播放失败");
         }
 
         // 5. 封装返回
@@ -105,7 +104,7 @@ public class IndexServiceImpl implements IndexService {
      * @return
      */
     @Override
-    @Cacheable(value = "todayCache", key = todayString)
+    @Cacheable(value = RedisConstant.TODAY, key = todayString)
     public TodaysPickVO getTodaysPick() {
         // 随机获取500名以内的动漫
         int rank = new Random().nextInt(500) + 1;
@@ -125,7 +124,7 @@ public class IndexServiceImpl implements IndexService {
                 bangumiId = node.get("id").asLong();
             }
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new BusinessException(e.getMessage());
         }
         return new TodaysPickVO(name, nameCn, image, bangumiId, brief);
     }
@@ -136,7 +135,7 @@ public class IndexServiceImpl implements IndexService {
      * @return
      */
     @Override
-    @Cacheable(value = "popularCache", key = monthString)
+    @Cacheable(value = RedisConstant.POPULAR, key = monthString)
     public ListVO<IndexAnimeVO> getPopular() {
         // 不存在就去爬虫获取bangumi首页有的动漫，获取六个，然后请求api来获得详情
         ListVO<IndexAnimeVO> list = new ListVO<>();
@@ -188,7 +187,7 @@ public class IndexServiceImpl implements IndexService {
             }
             list.setList(indexAnimeVOList);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new BusinessException(e.getMessage());
         }
         return list;
     }
