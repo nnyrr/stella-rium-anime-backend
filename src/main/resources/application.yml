@@ -30,12 +30,15 @@ spring:
       secret-key: ${stella-rium.minio.secret-key}
         # 存储桶名称（提前在MinIO控制台创建，如：springboot-files）
       bucket-name: ${stella-rium.minio.bucket-name}
+    prediction:
+      url: ${stella-rium.prediction.url}
   data:
     redis:
       host: ${stella-rium.redis.host}
       port: ${stella-rium.redis.port}
       password: ${stella-rium.redis.password}
       database: ${stella-rium.redis.database}
+
 
 springdoc:
   swagger-ui:

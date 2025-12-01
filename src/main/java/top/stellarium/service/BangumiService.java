@@ -130,7 +130,6 @@ public class BangumiService {
                             .queryParam("subject_type", 2)
                             .queryParam("limit", collectionDTO.getLimit())
                             .queryParam("offset", (collectionDTO.getPage() - 1) * collectionDTO.getLimit());
-
                     // 2. 动态添加参数
                     if (collectionDTO.getStatus() != null && collectionDTO.getStatus() != 0) {
                         uriBuilder.queryParam("type", collectionDTO.getStatus());
@@ -156,7 +155,6 @@ public class BangumiService {
                     uriBuilder.path("/v0/users/{username}/collections/-/characters")
                             .queryParam("limit", collectionDTO.getLimit())
                             .queryParam("offset", (collectionDTO.getPage() - 1) * collectionDTO.getLimit());
-
                     // 3. 最后一步：生成 URI 并填充 {username}
                     return uriBuilder.build(collectionDTO.getBangumiId());
                 })
