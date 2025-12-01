@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import top.stellarium.common.result.Result;
@@ -45,5 +46,18 @@ public class PredictionController {
     public Result<ListVO<CollectionAnimeVO>> getPredictionCharacter(Integer userId){
         log.info("获取预测角色: {}", userId);
         return Result.error("还未实现");
+    }
+
+    /**
+     * 获取动漫的相似动漫
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "获取动漫的相似动漫")
+    public Result<ListVO<CollectionAnimeVO>> getRelatedAnime(@PathVariable Integer id){
+        log.info("获取相似动漫: {}", id);
+        ListVO<CollectionAnimeVO> list = predictionService.getRelatedAnime(id);
+        return Result.success(list);
     }
 }

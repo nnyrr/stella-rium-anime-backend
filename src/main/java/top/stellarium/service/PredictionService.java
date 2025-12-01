@@ -10,4 +10,11 @@ public interface PredictionService {
      * @return
      */
     ListVO<CollectionAnimeVO> getPredictionAnime(Integer userId) throws Exception;
+
+    /**
+     * 获取动漫的相似动漫
+     * @param id
+     * @return
+     */
+    ListVO<CollectionAnimeVO> getRelatedAnime(Integer id);
 }

@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class PredictionServiceImpl implements PredictionService {
 
     private final WebClient webClient;
+    private final Integer CACHE_NUM = 15;
     @Autowired
     private UserMapper userMapper;
     @Autowired
@@ -74,7 +75,7 @@ public class PredictionServiceImpl implements PredictionService {
             String bangumiUsername = user.getBangumiId();
             List<Integer> collectionList = getCollectionList(bangumiUsername, ANIME);
             // 调用预测模型的接口
-            List<Integer> predictionList = getAnimePredictionList(collectionList);
+            List<Integer> predictionList = getAnimePredictionList(collectionList, CACHE_NUM);
             redisTemplate.opsForList().rightPushAll(key, predictionList);
             redisTemplate.expire(key, 30, TimeUnit.MINUTES);
             // body参数: user_id -> -1, history_anime_ids -> collectionList, top_k->15
@@ -125,15 +126,82 @@ public class PredictionServiceImpl implements PredictionService {
         return listVO;
     }
 
-    private List<Integer> getAnimePredictionList(List<Integer> history) {
+    /**
+     * 获取动漫的相似动漫
+     * @param id
+     * @return
+     */
+    @Override
+    public ListVO<CollectionAnimeVO> getRelatedAnime(Integer id) {
+        // 直接把整个结构存到缓存中，如果有存在整个缓存的话直接返回
+        // 否则去构造这个结构并存到缓存里面，有效期1天
+        String key = RedisConstant.PREDICTION + "::" + id + ":related:anime";
+        if(redisTemplate.hasKey(key)){
+            return (ListVO<CollectionAnimeVO>) redisTemplate.opsForValue().get(key);
+        }
+        ListVO<CollectionAnimeVO> listVO = new ListVO<>();
+        List<Integer> history = new ArrayList<>();
+        history.add(id);
+        List<Integer> predictionList = getAnimePredictionList(history, 4);
+        // 现在去利用预测出来的id列表去bgm获得整个结构然后返回
+        List<CollectionAnimeVO> list = new ArrayList<>();
+
+        for (int i = 0; i < predictionList.size(); i++) {
+            Integer animeId = predictionList.get(i);
+            AnimeInfo animeInfo = animeInfoMapper.selectById(animeId);
+            if(animeInfo == null){
+                Mono<String> mono = bangumiService.getSpecificAnime(animeId);
+                String jsonBody = mono.block();
+                if(jsonBody != null){
+                    JsonNode rootNode = null;
+                    try {
+                        rootNode = objectMapper.readTree(jsonBody);
+                    } catch (JsonProcessingException e) {
+                        throw new BusinessException(e.getMessage());
+                    }
+                    String name = null, nameCn = null, image = null, year = null, summary = null, tag = null;
+                    Long bangumiId = Long.valueOf(animeId);
+                    Double rating = null;
+                    name = rootNode.get("name").asText();
+                    nameCn = rootNode.get("name_cn").asText();
+                    image = rootNode.get("images").get("large").asText();
+                    year = rootNode.get("date").asText().split("-")[0];
+                    summary = rootNode.get("summary").asText();
+                    tag = rootNode.get("tags").get(0).get("name").asText();
+                    rating = rootNode.get("rating").get("score").asDouble();
+                    animeInfo = AnimeInfo
+                            .builder()
+                            .summary(summary)
+                            .tag(tag)
+                            .year(year)
+                            .image(image)
+                            .name(name)
+                            .nameCn(nameCn)
+                            .bangumiId(bangumiId)
+                            .rating(rating)
+                            .build();
+                    animeInfoMapper.insert(animeInfo);
+                }
+            }
+            CollectionAnimeVO collectionAnimeVO = new CollectionAnimeVO();
+            BeanUtils.copyProperties(animeInfo, collectionAnimeVO);
+            list.add(collectionAnimeVO);
+        }
+        listVO.setList(list);
+        listVO.setTotal(list.size());
+        redisTemplate.opsForValue().set(key, listVO);
+        return listVO;
+    }
+
+    private List<Integer> getAnimePredictionList(List<Integer> history, Integer topK) {
         List<Integer> list = new ArrayList<>();
         // 1. 准备参数
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("user_id", -1);
         requestBody.put("history_anime_ids", history);
-        requestBody.put("top_k", 15);
+        requestBody.put("top_k", topK);
 
-// 2. 发送请求
+        // 2. 发送请求
         Mono<String> mono = webClient.post()
                 .uri("/recommend/anime")
                 .contentType(MediaType.APPLICATION_JSON)
