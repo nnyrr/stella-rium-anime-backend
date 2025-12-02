@@ -15,11 +15,14 @@ import reactor.core.publisher.Mono;
 import top.stellarium.common.constant.RedisConstant;
 import top.stellarium.common.exception.BusinessException;
 import top.stellarium.mapper.AnimeInfoMapper;
+import top.stellarium.mapper.CharacterInfoMapper;
 import top.stellarium.mapper.UserMapper;
 import top.stellarium.pojo.dto.CollectionDTO;
 import top.stellarium.pojo.entity.AnimeInfo;
+import top.stellarium.pojo.entity.CharacterInfo;
 import top.stellarium.pojo.entity.User;
 import top.stellarium.pojo.vo.CollectionAnimeVO;
+import top.stellarium.pojo.vo.CollectionCharacterVO;
 import top.stellarium.pojo.vo.ListVO;
 import top.stellarium.service.BangumiService;
 import top.stellarium.service.PredictionService;
@@ -45,6 +48,8 @@ public class PredictionServiceImpl implements PredictionService {
     private RedisTemplate redisTemplate;
     @Autowired
     private AnimeInfoMapper animeInfoMapper;
+    @Autowired
+    private CharacterInfoMapper characterInfoMapper;
 
     private static final String ANIME = "anime";
     private static final String CHARACTER = "character";
@@ -86,10 +91,10 @@ public class PredictionServiceImpl implements PredictionService {
         for (int i = 0; i < 3; i++) {
             Integer animeId = (Integer) redisTemplate.opsForList().leftPop(key);
             AnimeInfo animeInfo = animeInfoMapper.selectById(animeId);
-            if(animeInfo == null){
+            if (animeInfo == null) {
                 Mono<String> mono = bangumiService.getSpecificAnime(animeId);
                 String jsonBody = mono.block();
-                if(jsonBody != null){
+                if (jsonBody != null) {
                     JsonNode rootNode = objectMapper.readTree(jsonBody);
                     String name = null, nameCn = null, image = null, year = null, summary = null, tag = null;
                     Long bangumiId = Long.valueOf(animeId);
@@ -128,6 +133,7 @@ public class PredictionServiceImpl implements PredictionService {
 
     /**
      * 获取动漫的相似动漫
+     *
      * @param id
      * @return
      */
@@ -136,7 +142,7 @@ public class PredictionServiceImpl implements PredictionService {
         // 直接把整个结构存到缓存中，如果有存在整个缓存的话直接返回
         // 否则去构造这个结构并存到缓存里面，有效期1天
         String key = RedisConstant.PREDICTION + "::" + id + ":related:anime";
-        if(redisTemplate.hasKey(key)){
+        if (redisTemplate.hasKey(key)) {
             return (ListVO<CollectionAnimeVO>) redisTemplate.opsForValue().get(key);
         }
         ListVO<CollectionAnimeVO> listVO = new ListVO<>();
@@ -149,10 +155,10 @@ public class PredictionServiceImpl implements PredictionService {
         for (int i = 0; i < predictionList.size(); i++) {
             Integer animeId = predictionList.get(i);
             AnimeInfo animeInfo = animeInfoMapper.selectById(animeId);
-            if(animeInfo == null){
+            if (animeInfo == null) {
                 Mono<String> mono = bangumiService.getSpecificAnime(animeId);
                 String jsonBody = mono.block();
-                if(jsonBody != null){
+                if (jsonBody != null) {
                     JsonNode rootNode = null;
                     try {
                         rootNode = objectMapper.readTree(jsonBody);
@@ -191,6 +197,132 @@ public class PredictionServiceImpl implements PredictionService {
         listVO.setTotal(list.size());
         redisTemplate.opsForValue().set(key, listVO);
         return listVO;
+    }
+
+    /**
+     * 获取预测的角色
+     *
+     * @param userId
+     * @return
+     */
+    @Override
+    public ListVO<CollectionCharacterVO> getPredictionCharacter(Integer userId) {
+        // 先检查是否存在推荐缓存
+        String key = RedisConstant.PREDICTION + "::" + userId + ":character";
+        if (redisTemplate.hasKey(key) && redisTemplate.opsForList().size(key) >= 3) {
+
+        } else {
+            // 先通过用户表获得用户id
+            User user = userMapper.selectById(userId);
+            // 再从bangumi读取用户的动漫收藏列表（只取前50个）
+            String bangumiUsername = user.getBangumiId();
+            List<Integer> collectionList = null;
+            try {
+                collectionList = getCollectionList(bangumiUsername, CHARACTER);
+            } catch (Exception e) {
+                throw new BusinessException(e.getMessage());
+            }
+            // 调用预测模型的接口
+            List<Integer> predictionList = getCharacterPredictionList(collectionList, CACHE_NUM);
+            redisTemplate.opsForList().rightPushAll(key, predictionList);
+            redisTemplate.expire(key, 30, TimeUnit.MINUTES);
+        }
+        ListVO<CollectionCharacterVO> listVO = new ListVO<>();
+        listVO.setTotal(3);
+        List<CollectionCharacterVO> list = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            Integer characterId = (Integer) redisTemplate.opsForList().leftPop(key);
+            CharacterInfo characterInfo = characterInfoMapper.selectById(characterId);
+            try {
+                if (characterInfo == null) {
+                    Mono<String> mono = bangumiService.getCharacter(Long.valueOf(characterId));
+                    Long bangumiId = Long.valueOf(characterId);
+                    String name = null, nameCn = null, image = null, tag = null, from = null;
+                    Mono<String> subjectMono = bangumiService.getCharacterSubject(bangumiId);
+                    String jsonBody = mono.block();
+                    String subjectJsonBody = subjectMono.block();
+                    if (jsonBody != null && subjectJsonBody != null) {
+                        JsonNode rootNode = null;
+                        rootNode = objectMapper.readTree(jsonBody);
+                        name = rootNode.get("name").asText();
+                        image = rootNode.get("images").get("large").asText();
+                        JsonNode infoboxNode = rootNode.get("infobox");
+                        if (infoboxNode.isArray()) {
+                            for (JsonNode info : infoboxNode) {
+                                String infoKey = info.path("key").asText();
+                                // 解析 Value：Bangumi 的 value 可能是字符串，也可能是数组
+                                JsonNode valNode = info.path("value");
+                                String valueStr = "";
+                                if (valNode.isArray()) {
+                                    // 如果是数组，通常取第一个或者拼接，这里简化处理取第一个v
+                                    valueStr = valNode.get(0).path("v").asText();
+                                } else {
+                                    valueStr = valNode.asText();
+                                }
+
+                                if ("简体中文名".equals(infoKey)) {
+                                    nameCn = valueStr;
+                                }
+
+                                if ("性别".equals(infoKey)) {
+                                    tag = valueStr;
+                                }
+                            }
+                        }
+                        JsonNode subjectRootNode = objectMapper.readTree(subjectJsonBody);
+                        from = subjectRootNode.get(0).get("name_cn").asText();
+                        String summary = rootNode.get("summary").asText();
+                        characterInfo = CharacterInfo.builder()
+                                .from(from)
+                                .tag(tag)
+                                .bangumiId(bangumiId)
+                                .image(image)
+                                .nameCn(nameCn)
+                                .name(name)
+                                .build();
+                    }
+                }
+            } catch (JsonProcessingException e) {
+                throw new BusinessException(e.getMessage());
+            }
+            CollectionCharacterVO collectionCharacterVO = new CollectionCharacterVO();
+            BeanUtils.copyProperties(characterInfo, collectionCharacterVO);
+            list.add(collectionCharacterVO);
+        }
+        listVO.setList(list);
+        // 从缓存里面取3个数据出来，并pop
+        // 然后再从数据库 || bangumi的api获取到这些东西的信息，
+        // 我可以数据库里有的直接拿，没有的去用api获取。
+        return listVO;
+    }
+
+    private List<Integer> getCharacterPredictionList(List<Integer> history, Integer topK) {
+        List<Integer> list = new ArrayList<>();
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("collected_character_ids", history);
+        requestBody.put("top_k", topK);
+        Mono<String> mono = webClient.post()
+                .uri("/recommend/character")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(requestBody) // 直接传入 Map
+                .retrieve()
+                .bodyToMono(String.class);
+        String jsonBody = mono.block();
+        try {
+            if (jsonBody != null) {
+                JsonNode rootNode = objectMapper.readTree(jsonBody);
+                JsonNode dataNode = rootNode.get("recommendations");
+                if (dataNode != null && dataNode.isArray()) {
+                    for (int i = 0; i < 15 && i < dataNode.size(); i++) {
+                        JsonNode node = dataNode.get(i);
+                        list.add(node.asInt());
+                    }
+                }
+            }
+        } catch (JsonProcessingException e) {
+            throw new BusinessException("获取预测失败！");
+        }
+        return list;
     }
 
     private List<Integer> getAnimePredictionList(List<Integer> history, Integer topK) {
@@ -247,7 +379,8 @@ public class PredictionServiceImpl implements PredictionService {
                 if (dataNode != null && dataNode.isArray() && !dataNode.isEmpty()) {
                     for (int i = 0; i < total && i < dataNode.size(); i++) {
                         JsonNode node = dataNode.get(i);
-                        list.add(node.get("subject").get("id").asInt());
+                        if (type == ANIME) list.add(node.get("subject").get("id").asInt());
+                        else list.add(node.get("id").asInt());
                     }
                 }
             }

@@ -70,7 +70,7 @@ public class OmofunService {
      * 步骤2：搜索并计算编辑距离
      */
     private String searchAndFindBestMatch(String keyword, String originalTitle) throws IOException {
-        String searchUrl = BASE_URL + "/vod/search.html?wd=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
+        String searchUrl = BASE_URL + "/vod/search?wd=" + URLEncoder.encode(keyword, StandardCharsets.UTF_8);
 
         Document doc = Jsoup.connect(searchUrl)
                 .userAgent(UA)

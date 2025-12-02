@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import top.stellarium.common.result.Result;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -41,7 +43,7 @@ public class ProxyController {
      * 前端根据返回的 type 决定是直连(mp4)还是走代理(m3u8)
      */
     @GetMapping("/resolve")
-    public Map<String, String> resolveUrl(@RequestParam String url) {
+    public Result<String> resolveUrl(@RequestParam String url) {
         Map<String, String> result = new HashMap<>();
         String realUrl = url;
 
@@ -53,17 +55,7 @@ public class ProxyController {
             }
         }
 
-        // 2. 简单的类型推断
-        String type = "auto"; // 默认为 auto (让播放器自己猜)
-        if (realUrl.contains(".m3u8")) {
-            type = "m3u8";
-        } else if (realUrl.contains(".mp4")) {
-            type = "mp4";
-        }
-
-        result.put("url", realUrl);
-        result.put("type", type);
-        return result;
+        return Result.success(realUrl);
     }
 
     /**

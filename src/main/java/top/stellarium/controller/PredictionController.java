@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import top.stellarium.common.result.Result;
 import top.stellarium.pojo.dto.CollectionDTO;
 import top.stellarium.pojo.vo.CollectionAnimeVO;
+import top.stellarium.pojo.vo.CollectionCharacterVO;
 import top.stellarium.pojo.vo.ListVO;
 import top.stellarium.service.PredictionService;
 
@@ -43,9 +44,10 @@ public class PredictionController {
      */
     @GetMapping("/character")
     @Operation(summary = "获取预测的角色")
-    public Result<ListVO<CollectionAnimeVO>> getPredictionCharacter(Integer userId){
+    public Result<ListVO<CollectionCharacterVO>> getPredictionCharacter(Integer userId){
         log.info("获取预测角色: {}", userId);
-        return Result.error("还未实现");
+        ListVO<CollectionCharacterVO> listVO = predictionService.getPredictionCharacter(userId);
+        return Result.success(listVO);
     }
 
     /**

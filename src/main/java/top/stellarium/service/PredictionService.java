@@ -1,6 +1,7 @@
 package top.stellarium.service;
 
 import top.stellarium.pojo.vo.CollectionAnimeVO;
+import top.stellarium.pojo.vo.CollectionCharacterVO;
 import top.stellarium.pojo.vo.ListVO;
 
 public interface PredictionService {
@@ -17,4 +18,11 @@ public interface PredictionService {
      * @return
      */
     ListVO<CollectionAnimeVO> getRelatedAnime(Integer id);
+
+    /**
+     * 获取预测的角色
+     * @param userId
+     * @return
+     */
+    ListVO<CollectionCharacterVO> getPredictionCharacter(Integer userId);
 }
