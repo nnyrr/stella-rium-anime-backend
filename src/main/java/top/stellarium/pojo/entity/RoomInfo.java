@@ -13,4 +13,5 @@ public class RoomInfo {
     private Long ownerId;
     private Integer onlineCount;
     private Integer status;
+    private String cover;
 }

@@ -8,5 +8,6 @@ public class RedisConstant {
     public static final String COLLECTION = "collectionCache";
     public static final String PREDICTION = "predictionCache";
     public static final String PLAYER = "playerCache";
+    public static final String TOGETHER = "togetherCache";
     public static final long COLLECTION_EXPIRE = 60;
 }
