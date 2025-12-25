@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+numpy
+scikit-learn
+tensorflow>=2.5.0
+deepctr[cpu]  # 如果有GPU可以去掉[cpu]
+joblib
+tqdm
