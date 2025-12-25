@@ -7,6 +7,9 @@ Stella-rium Anime是一个基于第三方评分网站Bangumi的数据，通过�
 
 项目采用SpringBoot(Java) + Vue3的前后端分离架构，利用Tensorflow框架提供推荐服务，使用Redis作为缓存，Mysql做部分数据的持久化。
 
+# 前端
+https://github.com/nnyrr/stella-rium-anime-frontend
+
 # 环境要求
 Java 25
 Python 3.10+
